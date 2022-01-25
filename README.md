@@ -37,11 +37,11 @@
 
 ![info](https://github.com/choya-lee/hfutDailyCP/raw/master/img/info.png)
 
-- 务必更改签到时间，建议将选中处改为10、20、25
+- 建议将选中处改为10、20、25，不更改则到此配置完成
 
   ![change_yml](https://github.com/choya-lee/hfutDailyCP/raw/master/img/change_yml.png)
 
-- 检查Action，如下图则代表配置成功
+- 如上一步更改时间，则可检查Action，出现下图则代表配置成功
 
   ![success](https://github.com/choya-lee/hfutDailyCP/raw/master/img/success.png)
 
