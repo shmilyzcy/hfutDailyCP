@@ -6,9 +6,8 @@ import datetime
 import pytz
 import base64
 from Crypto.Cipher import AES
-from requests.sessions import session
 from retry import retry
- 
+
 
 class hfuter:
     def __init__(self, username, password) -> None:
@@ -17,7 +16,7 @@ class hfuter:
         self.session = requests.session()
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/83.0.4103.61 Safari/537.36 Edg/83.0.478.37",
+                          "Chrome/83.0.4103.61 Safari/537.36 Edg/83.0.478.37",
             "Accept": "application/json, text/plain, */*",
         })
 
@@ -31,11 +30,12 @@ class hfuter:
         else:
             print("{username}登录失败！".format(username=self.username))
             self.logged_in = False
-    
+
     @retry()
     def __login(self) -> bool:
         def encrypt_password(text: str, key: str):
             """encrypt password"""
+
             def pad(data_to_pad, block_size, style='pkcs7'):
                 """Apply standard padding.
                 Args:
@@ -49,19 +49,21 @@ class hfuter:
                 Return:
                 byte string : the original data with the appropriate padding added at the end.
                 """
+
                 def bchr(s):
                     return bytes([s])
 
-                padding_len = block_size-len(data_to_pad) % block_size
+                padding_len = block_size - len(data_to_pad) % block_size
                 if style == 'pkcs7':
-                    padding = bchr(padding_len)*padding_len
+                    padding = bchr(padding_len) * padding_len
                 elif style == 'x923':
-                    padding = bchr(0)*(padding_len-1) + bchr(padding_len)
+                    padding = bchr(0) * (padding_len - 1) + bchr(padding_len)
                 elif style == 'iso7816':
-                    padding = bchr(128) + bchr(0)*(padding_len-1)
+                    padding = bchr(128) + bchr(0) * (padding_len - 1)
                 else:
                     raise ValueError("Unknown padding style")
                 return data_to_pad + padding
+
             key = key.encode('utf-8')
             text = text.encode('utf-8')
 
@@ -94,7 +96,7 @@ class hfuter:
         # 先get
         ret = self.session.get(
             'https://cas.hfut.edu.cn/cas/policy/checkUserIdenty',
-            params={'_': millis+1, 'username': self.username, 'password': password})
+            params={'_': millis + 1, 'username': self.username, 'password': password})
 
         ret = ret.json()
 
@@ -126,7 +128,7 @@ class hfuter:
             return True
         else:
             return False
-    
+
     @retry()
     def basic_infomation(self):
         if not self.logged_in:
@@ -179,11 +181,12 @@ class hfuter:
         self.session.headers.pop("Content-Type")
 
         info = self.session.get(
-            "http://stu.hfut.edu.cn/xsfw/sys/swmjbxxapp/StudentBasicInfo/initPageConfig.do", params={"data": "{}"}).json()
+            "http://stu.hfut.edu.cn/xsfw/sys/swmjbxxapp/StudentBasicInfo/initPageConfig.do",
+            params={"data": "{}"}).json()
         self.session.headers.pop("Referer")
 
         return info['data']
-    
+
     @retry()
     def daily_checkin(self) -> bool:
         if not self.logged_in:
@@ -244,11 +247,11 @@ class hfuter:
         ).json()
 
         start_time = "%04d-%02d-%02d " % today + \
-            info['data']['DZ_TBKSSJ'] + " +0800"
+                     info['data']['DZ_TBKSSJ'] + " +0800"
         start_time = datetime.datetime.strptime(
             start_time, "%Y-%m-%d %H:%M:%S %z")
         end_time = "%04d-%02d-%02d " % today + \
-            info['data']['DZ_TBJSSJ'] + " +0800"
+                   info['data']['DZ_TBJSSJ'] + " +0800"
         end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S %z")
         now_time = datetime.datetime.now(tz=pytz.timezone('Asia/Shanghai'))
 
@@ -290,15 +293,40 @@ class hfuter:
         return ret['code'] == "0"
 
 
-if __name__ == "__main__":
+def auto_push(corpid, corpsecret, agentid, text):
+    data = {
+        "corpid": corpid,
+        "corpsecret": corpsecret,
+        "agentid": agentid,
+        "text": text
+    }
+    resp = requests.post('https://api.htm.fun/api/Wechat/text/', data=data)
+    return resp
 
+
+def main():
     i = 1
+
     while i < len(sys.argv):
         print(sys.argv[i])
-        stu = hfuter(username=sys.argv[i], password=sys.argv[i+1])
+        stu = hfuter(username=sys.argv[i], password=sys.argv[i + 1])
         if stu.daily_checkin():
             print("签到成功~")
+            if sys.argv[i + 4] == "1000002":
+                auto_push(sys.argv[i + 2], sys.argv[i + 3], sys.argv[i + 4], '今日校园签到成功')
+                i += 5
+            else:
+                i += 2
+                print(i)
         else:
             print("签到失败！")
+            if sys.argv[i + 4] == "1000002":
+                auto_push(sys.argv[i + 2], sys.argv[i + 3], sys.argv[i + 4], '自动签到失败，请手动签到')
+                i += 5
+            else:
+                i += 2
         print()
-        i+=2
+
+
+if __name__ == "__main__":
+    main()
