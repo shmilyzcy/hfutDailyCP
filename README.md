@@ -9,14 +9,13 @@
 ### 使用必读
 
 1. 本项目仅适用于`合肥工业大学`的今日校园打卡
-
 2. 以下账号、密码即`新信息门户`的账号(学号)和密码
 
 ### 实现功能
 
-1. 支持单人、多人打卡推送，格式见 `使用说明步骤4`
+1. 支持单人、多人打卡，格式见 `使用说明步骤4`
 2. 脚本在每天14：30左右自动签到，可自行更改签到时间
-3. 添加微信文本推送 **（可选功能，如需使用请参照企业微信开放API）**
+3. 添加`微信文本`推送功能，格式见 `使用说明步骤4`**（可选功能，如需使用请参照企业微信开放API）**
 
 <details>
 <summary><b>企业微信开放API</b></summary>
@@ -62,7 +61,7 @@
 
 ### 使用说明
 
-1. 右上角fork本仓库
+1. 右上角fork本仓库（如果此脚本能帮助到你，请给一个star）
 
 ![fork](https://github.com/choya-lee/hfutDailyCP/raw/master/img/fork.png)
 
@@ -81,9 +80,31 @@
 
 ![secret](https://github.com/choya-lee/hfutDailyCP/raw/master/img/secret.png)
 
-4. **非微信推送：**在`name`栏中填`INFO`，`value`中填入`账号`和`密码`，用空格隔开
+4. `name`栏：填`INFO`
 
-   **微信推送：**在`name`栏中填`INFO`，`value`中填入`账号`、`密码`、`corpid`、`corpsecret`和`agentid`，用空格隔开
+   `value`栏：（以下皆用**空格**隔开）
+   
+   ​	**单人打卡：**
+   
+   ```bash
+   # 非微信推送：
+   0 账号 密码 0 0 0
+   
+   # 微信推送：
+   1 账号 密码 corpid corpsecret agentid 
+   ```
+   
+   ​	**多人打卡：**
+   
+   ```bash
+   # 非微信推送：
+   0 账号_1 密码_1 0 0 0 账号_2 密码_2 0 0 0
+   
+   # 微信推送：
+   1 账号_1 密码_1 corpid_1 corpsecret_1 agentid_1 账号_2 密码_2 corpid_2 corpsecret_2 agentid_2
+   ```
+   
+   
 
 ![info](https://github.com/choya-lee/hfutDailyCP/raw/master/img/info.png)
 

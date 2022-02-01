@@ -305,27 +305,27 @@ def auto_push(corpid, corpsecret, agentid, text):
 
 
 def main():
-    i = 1
+
+    flag = sys.argv[1]
+    i = 2
 
     while i < len(sys.argv):
         print(sys.argv[i])
         stu = hfuter(username=sys.argv[i], password=sys.argv[i + 1])
         if stu.daily_checkin():
             print("签到成功~")
-            if sys.argv[i + 4] == "1000002":
-                auto_push(sys.argv[i + 2], sys.argv[i + 3], sys.argv[i + 4], '今日校园签到成功')
-                i += 5
+            if not flag:
+                pass
             else:
-                i += 2
-                print(i)
+                auto_push(sys.argv[i + 2], sys.argv[i + 3], sys.argv[i + 4], '今日校园签到成功')
         else:
             print("签到失败！")
-            if sys.argv[i + 4] == "1000002":
-                auto_push(sys.argv[i + 2], sys.argv[i + 3], sys.argv[i + 4], '自动签到失败，请手动签到')
-                i += 5
+            if not flag:
+                pass
             else:
-                i += 2
+                auto_push(sys.argv[i + 2], sys.argv[i + 3], sys.argv[i + 4], '自动签到失败，请手动签到')
         print()
+        i += 5
 
 
 if __name__ == "__main__":
