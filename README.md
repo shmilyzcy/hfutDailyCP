@@ -1,10 +1,11 @@
 <div align="center">
-<h1 align="center">HFUT今日校园自动签到</h1>
+<h1 align="center">HFUT今日校园自动签到(3.29更新)</h1>
 <img src="https://img.shields.io/github/issues/choya-lee/hfutDailyCP?color=green">
 <img src="https://img.shields.io/github/stars/choya-lee/hfutDailyCP?color=yellow">
 <img src="https://img.shields.io/github/forks/choya-lee/hfutDailyCP?color=orange">
     <img src="https://img.shields.io/github/license/choya-lee/hfutDailyCP?color=red">
 </div>
+
 
 ### 使用必读
 
@@ -120,6 +121,10 @@
 ### 声明
 
 1. 此脚本仅供学习交流，**禁止个人盈利**
-
 2. 脚本使用过程中，若存在瞒报误报所造成的损失由使用者个人承担
+
+### 致谢
+
+1. [mikuzhangping](https://github.com/mikuzhangping)/**[mikuDailyCP](https://github.com/mikuzhangping/mikuDailyCP)**
+2. [qdddz](https://github.com/qdddz)/**[HFUT_AutoSubmit](https://github.com/qdddz/HFUT_AutoSubmit)**
 

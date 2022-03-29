@@ -14,49 +14,60 @@ class hfuter:
         super().__init__()
 
         self.session = requests.session()
-        self.session.headers.update(
-            {
-                "User-Agent": "Mozilla/5.0 (iPad; CPU OS 15_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 (4396363776)cpdaily/9.0.19  wisedu/9.0.19"
-                "Chrome/83.0.4103.61 Safari/537.36 Edg/83.0.478.37",
-                "Accept": "application/json, text/plain, */*",
-            }
-        )
+        self.session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/83.0.4103.61 Safari/537.36 Edg/83.0.478.37",
+            "Accept": "application/json, text/plain, */*",
+        })
 
         self.username = username
         self.password = password
 
         ret = self.__login()
         if ret:
-            print("尾号{username}登录成功".format(username=self.username[-3:]))
+            print("{username}登录成功".format(username=self.username))
             self.logged_in = True
         else:
-            print("尾号{username}登录失败！".format(username=self.username[-3:]))
+            print("{username}登录失败！".format(username=self.username))
             self.logged_in = False
 
-    @retry(tries=5)
+    @retry()
     def __login(self) -> bool:
         def encrypt_password(text: str, key: str):
             """encrypt password"""
 
-            def pad(data_to_pad, block_size, style="pkcs7"):
+            def pad(data_to_pad, block_size, style='pkcs7'):
+                """Apply standard padding.
+                Args:
+                data_to_pad (byte string):
+                    The data that needs to be padded.
+                block_size (integer):
+                    The block boundary to use for padding. The output length is guaranteed
+                    to be a multiple of :data:`block_size`.
+                style (string):
+                    Padding algorithm. It can be *'pkcs7'* (default), *'iso7816'* or *'x923'*.
+                Return:
+                byte string : the original data with the appropriate padding added at the end.
+                """
+
                 def bchr(s):
                     return bytes([s])
 
                 padding_len = block_size - len(data_to_pad) % block_size
-                if style == "pkcs7":
+                if style == 'pkcs7':
                     padding = bchr(padding_len) * padding_len
-                elif style == "x923":
+                elif style == 'x923':
                     padding = bchr(0) * (padding_len - 1) + bchr(padding_len)
-                elif style == "iso7816":
+                elif style == 'iso7816':
                     padding = bchr(128) + bchr(0) * (padding_len - 1)
                 else:
                     raise ValueError("Unknown padding style")
                 return data_to_pad + padding
 
-            key = key.encode("utf-8")
-            text = text.encode("utf-8")
+            key = key.encode('utf-8')
+            text = text.encode('utf-8')
 
-            text = pad(text, len(key), style="pkcs7")
+            text = pad(text, len(key), style='pkcs7')
 
             aes = AES.new(key, AES.MODE_ECB)
             password = aes.encrypt(text)
@@ -65,56 +76,52 @@ class hfuter:
 
         ret = self.session.get("https://cas.hfut.edu.cn/cas/login")
         # JSESSIONID
-        ret = self.session.get("https://cas.hfut.edu.cn/cas/vercode")
+        ret = self.session.get('https://cas.hfut.edu.cn/cas/vercode')
         # check if needs Vercode
         millis = int(round(time.time() * 1000))
         ret = self.session.get(
-            "https://cas.hfut.edu.cn/cas/checkInitVercode", params={"_": millis}
-        )
-        key = ret.cookies["LOGIN_FLAVORING"]
+            'https://cas.hfut.edu.cn/cas/checkInitVercode', params={'_': millis})
+        key = ret.cookies['LOGIN_FLAVORING']
 
         if ret.json():
             # needs OCR! will be done later.
-            print("需验证码，目前该功能此脚本未支持")
+            print('需验证码，目前该功能此脚本未支持')
             return False
         else:
-            print("无需验证码")
+            print('无需验证码')
 
         # 加密密码
         password = encrypt_password(self.password, key)
 
         # 先get
         ret = self.session.get(
-            "https://cas.hfut.edu.cn/cas/policy/checkUserIdenty",
-            params={"_": millis + 1, "username": self.username, "password": password},
-        )
+            'https://cas.hfut.edu.cn/cas/policy/checkUserIdenty',
+            params={'_': millis + 1, 'username': self.username, 'password': password})
 
         ret = ret.json()
 
         # 判断是否成功
-        if ret["msg"] != "success" and not ret["data"]["authFlag"]:
+        if ret['msg'] != 'success' and not ret['data']['authFlag']:
             return False
 
-        if ret["data"]["mailRequired"] or ret["data"]["phoneRequired"]:
+        if ret['data']['mailRequired'] or ret['data']['phoneRequired']:
             print("你需要先进行手机或者邮箱的认证，请在PC上打开cas.hfut.edu.cn页面进行登录之后才可使用此脚本")
             return False
 
         # 然后post
         self.session.headers.update(
-            {"Content-Type": "application/x-www-form-urlencoded"}
-        )
+            {"Content-Type": "application/x-www-form-urlencoded"})
         ret = self.session.post(
-            "https://cas.hfut.edu.cn/cas/login",
+            'https://cas.hfut.edu.cn/cas/login',
             data={
-                "username": self.username,
-                "capcha": "",
-                "execution": "e1s1",
-                "_eventId": "submit",
-                "password": password,
-                "geolocation": "",
-                "submit": "登录"
-            },
-        )
+                'username': self.username,
+                'capcha': "",
+                'execution': "e1s1",
+                '_eventId': "submit",
+                'password': password,
+                'geolocation': "",
+                'submit': "登录"
+            })
         self.session.headers.pop("Content-Type")
 
         if ret.text.find("cas协议登录成功跳转页面") != -1:
@@ -122,19 +129,18 @@ class hfuter:
         else:
             return False
 
-    @retry(tries=5)
+    @retry()
     def basic_infomation(self):
         if not self.logged_in:
             return {}
 
-        self.session.get("http://stu.hfut.edu.cn/xsfw/sys/swmjbxxapp/*default/index.do")
+        self.session.get(
+            "http://stu.hfut.edu.cn/xsfw/sys/swmjbxxapp/*default/index.do")
 
-        self.session.headers.update(
-            {
-                "Content-Type": "application/x-www-form-urlencoded",
-                "X-Requested-With": "XMLHttpRequest"
-            }
-        )
+        self.session.headers.update({
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Requested-With": "XMLHttpRequest"
+        })
         self.session.post(
             "http://stu.hfut.edu.cn/xsfw/sys/emapfunauth/welcomeAutoIndex.do"
         )
@@ -143,22 +149,21 @@ class hfuter:
 
         ret = self.session.get(
             "http://stu.hfut.edu.cn/xsfw/sys/emapfunauth/casValidate.do",
-            params={"service": "/xsfw/sys/swmjbxxapp/*default/index.do"},
+            params={
+                'service': '/xsfw/sys/swmjbxxapp/*default/index.do'
+            }
         )
 
         self.session.headers.update({"X-Requested-With": "XMLHttpRequest"})
         self.session.headers.update(
-            {"Referer": "http://stu.hfut.edu.cn/xsfw/sys/swmjbxxapp/*default/index.do"}
-        )
+            {"Referer": "http://stu.hfut.edu.cn/xsfw/sys/swmjbxxapp/*default/index.do"})
         ret = self.session.get(
-            "http://stu.hfut.edu.cn/xsfw/sys/emappagelog/config/swmjbxxapp.do"
-        )
+            "http://stu.hfut.edu.cn/xsfw/sys/emappagelog/config/swmjbxxapp.do")
         self.session.headers.pop("X-Requested-With")
 
         config_data = {"APPID": "4930169432823497", "APPNAME": "swmjbxxapp"}
         self.session.headers.update(
-            {"Content-Type": "application/x-www-form-urlencoded"}
-        )
+            {"Content-Type": "application/x-www-form-urlencoded"})
         ret = self.session.post(
             "http://stu.hfut.edu.cn/xsfw/sys/swpubapp/MobileCommon/getSelRoleConfig.do",
             data={"data": json.dumps(config_data)}
@@ -177,28 +182,25 @@ class hfuter:
 
         info = self.session.get(
             "http://stu.hfut.edu.cn/xsfw/sys/swmjbxxapp/StudentBasicInfo/initPageConfig.do",
-            params={"data": "{}"}
-        ).json()
+            params={"data": "{}"}).json()
         self.session.headers.pop("Referer")
 
-        return info["data"]
+        return info['data']
 
-    @retry(tries=5)
-    def daily_checkin(self) -> int:
+    @retry()
+    def daily_checkin(self) -> bool:
         if not self.logged_in:
-            return 0
+            return False
 
-        today = datetime.datetime.now(tz=pytz.timezone("Asia/Shanghai")).timetuple()[:3]
+        today = datetime.datetime.now(
+            tz=pytz.timezone('Asia/Shanghai')).timetuple()[:3]
         self.session.get(
-            "http://stu.hfut.edu.cn/xsfw/sys/swmxsyqxxsjapp/*default/index.do"
-        )
+            "http://stu.hfut.edu.cn/xsfw/sys/swmxsyqxxsjapp/*default/index.do")
 
-        self.session.headers.update(
-            {
-                "Content-Type": "application/x-www-form-urlencoded",
-                "X-Requested-With": "XMLHttpRequest"
-            }
-        )
+        self.session.headers.update({
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Requested-With": "XMLHttpRequest"
+        })
         self.session.post(
             "http://stu.hfut.edu.cn/xsfw/sys/emapfunauth/welcomeAutoIndex.do"
         )
@@ -207,55 +209,51 @@ class hfuter:
 
         ret = self.session.get(
             "http://stu.hfut.edu.cn/xsfw/sys/emapfunauth/casValidate.do",
-            params={"service": "/xsfw/sys/swmjbxxapp/*default/index.do"}
+            params={
+                'service': '/xsfw/sys/swmjbxxapp/*default/index.do'
+            }
         )
 
         self.session.headers.update({"X-Requested-With": "XMLHttpRequest"})
         self.session.headers.update(
-            {"Referer": "http://stu.hfut.edu.cn/xsfw/sys/swmjbxxapp/*default/index.do"}
-        )
+            {"Referer": "http://stu.hfut.edu.cn/xsfw/sys/swmjbxxapp/*default/index.do"})
         ret = self.session.get(
-            "http://stu.hfut.edu.cn/xsfw/sys/emappagelog/config/swmxsyqxxsjapp.do"
-        )
+            "http://stu.hfut.edu.cn/xsfw/sys/emappagelog/config/swmxsyqxxsjapp.do")
         self.session.headers.pop("X-Requested-With")
 
-        config_data = {"APPID": "5811260348942403", "APPNAME": "swmxsyqxxsjapp"}
+        config_data = {"APPID": "5811260348942403",
+                       "APPNAME": "swmxsyqxxsjapp"}
         self.session.headers.update(
-            {"Content-Type": "application/x-www-form-urlencoded"}
-        )
+            {"Content-Type": "application/x-www-form-urlencoded"})
         ret = self.session.post(
             "http://stu.hfut.edu.cn/xsfw/sys/swpubapp/MobileCommon/getSelRoleConfig.do",
             data={"data": json.dumps(config_data)}
         ).json()
         if ret["code"] != "0":
             print(ret["msg"])
-            return 0
+            return False
         ret = self.session.post(
             "http://stu.hfut.edu.cn/xsfw/sys/swpubapp/MobileCommon/getMenuInfo.do",
-            data={"data": json.dumps(config_data)},
+            data={"data": json.dumps(config_data)}
         ).json()
         if ret["code"] != "0":
             print(ret["msg"])
-            return 0
-        check = self.session.post(
-            "http://stu.hfut.edu.cn/xsfw/sys/swmxsyqxxsjapp/modules/mrbpa/judgeTodayHasData.do",
-            data={"data": json.dumps({"TBSJ": "%.2d-%.2d-%.2d" % today})},
-        ).json()
-
-        if len(check["data"]) == 1:
-            return 2
+            return False
         self.session.headers.pop("Content-Type")
 
         info = self.session.get(
             "http://stu.hfut.edu.cn/xsfw/sys/swmxsyqxxsjapp/modules/mrbpa/getSetting.do",
-            data={"data": "{}"},
+            data={"data": "{}"}
         ).json()
 
-        start_time = "%04d-%02d-%02d " % today + info["data"]["DZ_TBKSSJ"] + " +0800"
-        start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S %z")
-        end_time = "%04d-%02d-%02d " % today + info["data"]["DZ_TBJSSJ"] + " +0800"
+        start_time = "%04d-%02d-%02d " % today + \
+                     info['data']['DZ_TBKSSJ'] + " +0800"
+        start_time = datetime.datetime.strptime(
+            start_time, "%Y-%m-%d %H:%M:%S %z")
+        end_time = "%04d-%02d-%02d " % today + \
+                   info['data']['DZ_TBJSSJ'] + " +0800"
         end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S %z")
-        now_time = datetime.datetime.now(tz=pytz.timezone("Asia/Shanghai"))
+        now_time = datetime.datetime.now(tz=pytz.timezone('Asia/Shanghai'))
 
         print("打卡起始时间:", start_time)
         print("打卡结束时间:", end_time)
@@ -264,49 +262,35 @@ class hfuter:
             print("在打卡时间内")
         else:
             print("不在打卡时间内")
-            return 0
+            return False
 
         self.session.headers.update(
-            {"Content-Type": "application/x-www-form-urlencoded"}
-        )
+            {"Content-Type": "application/x-www-form-urlencoded"})
         last_form = self.session.post(
             "http://stu.hfut.edu.cn/xsfw/sys/swmxsyqxxsjapp/modules/mrbpa/getStuXx.do",
-            data={"data": json.dumps({"TBSJ": "%.2d-%.2d-%.2d" % today})},
+            data={"data": json.dumps({"TBSJ": "%.2d-%.2d-%.2d" % today})}
         ).json()
-        if last_form["code"] != "0":
-            return 0
-        studentKey = self.session.post(
-            "http://stu.hfut.edu.cn/xsfw/sys/swmxsyqxxsjapp/modules/mrbpa/studentKey.do",
-            data={},
-        ).json()
-        new_form = last_form["data"]
-        new_form.update(
-            {
-                "DZ_SFSB": "1",
-                "GCKSRQ": "",
-                "GCJSRQ": "",
-                "DFHTJHBSJ": "",
-                "BY1": "1",
-                "TBSJ": "%.2d-%.2d-%.2d" % today,
-                "studentKey": studentKey["data"]["studentKey"],
-            }
-        )
-        paramkey = self.session.post(
-            "http://stu.hfut.edu.cn/xsfw/sys/swmxsyqxxsjapp/modules/mrbpa/setCode.do",
-            data={"data": json.dumps(new_form)}
-        ).json()
+        if last_form['code'] != "0":
+            return False
+
+        new_form = last_form['data']
+        new_form.update({
+            "DZ_SFSB": "1",
+            "GCKSRQ": "",
+            "GCJSRQ": "",
+            "DFHTJHBSJ": "",
+            "BY1": "1",
+            "TBSJ": "%.2d-%.2d-%.2d" % today
+        })
 
         ret = self.session.post(
             "http://stu.hfut.edu.cn/xsfw/sys/swmxsyqxxsjapp/modules/mrbpa/saveStuXx.do",
-            data={"data": json.dumps(paramkey["data"])}
+            data={"data": json.dumps(new_form)}
         ).json()
 
         self.session.headers.pop("Content-Type")
         self.session.headers.pop("Referer")
-        if ret["code"] == "0":
-            return 1
-        else:
-            return 0
+        return ret['code'] == "0"
 
 
 def auto_push(corpid, corpsecret, agentid, text):
@@ -314,9 +298,9 @@ def auto_push(corpid, corpsecret, agentid, text):
         "corpid": corpid,
         "corpsecret": corpsecret,
         "agentid": agentid,
-        "text": text,
+        "text": text
     }
-    resp = requests.post("https://api.htm.fun/api/Wechat/text/", data=data)
+    resp = requests.post('https://api.htm.fun/api/Wechat/text/', data=data)
     return resp
 
 
@@ -326,16 +310,21 @@ def main():
     i = 2
 
     while i < len(sys.argv):
+        print(sys.argv[i])
         stu = hfuter(username=sys.argv[i], password=sys.argv[i + 1])
-        ret = stu.daily_checkin()
-        if ret == 1:
+        if stu.daily_checkin():
             print("签到成功~")
-            if flag:
-                auto_push(sys.argv[i + 2], sys.argv[i + 3], sys.argv[i + 4], "今日校园签到成功")
-        elif ret == 0:
+            if not flag:
+                pass
+            else:
+                auto_push(sys.argv[i + 2], sys.argv[i + 3], sys.argv[i + 4], '今日校园签到成功')
+        else:
             print("签到失败！")
-            if flag:
-                auto_push(sys.argv[i + 2], sys.argv[i + 3], sys.argv[i + 4], "自动签到失败，请手动签到")
+            if not flag:
+                pass
+            else:
+                auto_push(sys.argv[i + 2], sys.argv[i + 3], sys.argv[i + 4], '自动签到失败，请手动签到')
+        print()
         i += 5
 
 
